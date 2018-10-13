@@ -1,5 +1,7 @@
-# Comparison of effects of 10 anti-cancer drugs on three cancer metrics in mice
+# Comparison of effects of four anti-cancer drugs on three cancer metrics in mice
 ## Overview
+This study was about assessing the effects of four anti-cancer drug therapies on three measures of cancer. Mice were used as the test subjects, following a repeat measures design. This study focused on data visualisation rather than on hypothesis testing; hence, the code used does not implement linear mixed models and post-hoc tests to compare means.
+
 ## Getting Started
 Python modules Pandas, Numpy, and MatPlotLib were used for data analyses and visualisation.
 
@@ -126,7 +128,7 @@ plt.ylabel("Change in tumour volume (%)")
 plt.axhline(y = 0, color = "black")
 ```
 
-The bar graph was further annotated with the percentage values (white font).
+The bar graph was further annotated with the percentage values (white font). 
 
 ```python
 # Add label inside the bar graph (%)
@@ -134,10 +136,10 @@ count = 0
 
 for i in pct_tumour_change:
     if i < 0:
-        y_coord = -3.5
+        y = -4
     else:
-        y_coord = 2
-    plt.text(count, y_coord, str(round(i, 1)) + '%', ha = 'center', color = 'white')
+        y = 3
+    plt.text(count, y, str(round(i, 1)) + '%', ha = 'center', color = 'white')
     count += 1
 ```
 
@@ -183,7 +185,7 @@ plt.legend(tumour_means.keys())
 ```
 
 ### Metastasis Analysis: Data Preparation
-Another dataframe, `mt_df3`, was created by dropping tumour volume data from the `mt_df` dataframe. The data was then grouped by `Drug` and `Timepoint`
+Another dataframe, `mt_df3`, was created by dropping tumour volume data from the `mt_df` dataframe. The data was then grouped by `Drug` and `Timepoint`.
 
 ```python
 mt_df3 = mt_df.drop("Tumor Volume (mm3)", axis = 1)
@@ -238,12 +240,124 @@ no_mice = pd.DataFrame(no_mice.unstack(0))
 no_mice
 ```
 
-Another approach is based on the mortality rate. According to Nohrmann (1953), this approach is particularly useful for repeat measures studies because the beginning population size at one time point is the ending population size of the previous time point. To get mortality rate (Q), the formula is 
+The results could be visualised as a line plot.
 
 ```python
-Q = \frac{d}{d + l}
-where d = number of deceased
+# Plot number of surviving mice per unit time
+
+x_axis = np.arange(0,time.max() + 5, 5) # time
+no_series = np.arange(0,no_drugs)
+
+for i in no_series:
+    plt.plot(x_axis, 
+             no_mice[drugs[i]], 
+             marker = "o")
+    plt.title("Number of Mice Surviving Each Day of Treatment")
+    plt.xlabel("Day Number")
+    plt.ylabel("Number of Mice")
+    plt.xlim(-5, max(time) + 5)
+    plt.ylim(0, 30)
+    plt.legend()
+```
+
+Another approach is based on the mortality rate. According to Nohrmann (1953), this approach is particularly useful for repeat measures studies because the beginning population size at one time point is the ending population size of the previous time point. To get mortality rate, the formula is: 
+
+```python
+Q = d / d + l
+where Q = mortality rate
+      d = number of deceased
       l = number of survivors
 ```
 
+For this study, Q was calculated using the following expression:
+
+```python
+# Mouse mortality values
+mortality = (abs(no_mice.diff()) / no_mice)
+```
+
+Survival rate (SR), therefore, is based on (1 - Q). For instance:
+
+```python
+SR t1 = 100 (1 - Q1)
+SR t2 = 100 (1 - Q1) (1 - Q2)
+SR tn = 100 (1 - Q1) (1 - Q2) ... (1 - Qn)
+```
+
+The implementation of Nohrmann's SR equation for this study was as follows:
+
+```python
+# survival = 1 - mouse mortality
+def survive(x): # where x is the index of time (range: time[1] = 5 to time[9] = 45)
+    return 1 - mortality.iloc[x,0:4]
+
+surv_t05 = survive(1)
+surv_t10 = survive(2)
+surv_t15 = survive(3)
+surv_t20 = survive(4)
+surv_t25 = survive(5)
+surv_t30 = survive(6)
+surv_t35 = survive(7)
+surv_t40 = survive(8)
+surv_t45 = survive(9)
+
+# survival rate per year
+survival_rate_t05 = 100 * surv_t05
+survival_rate_t10 = 100 * surv_t05 * surv_t10
+survival_rate_t15 = 100 * surv_t05 * surv_t10 * surv_t15
+survival_rate_t20 = 100 * surv_t05 * surv_t10 * surv_t15 * surv_t20
+survival_rate_t25 = 100 * surv_t05 * surv_t10 * surv_t15 * surv_t20 \
+                        * surv_t25
+survival_rate_t30 = 100 * surv_t05 * surv_t10 * surv_t15 * surv_t20 \
+                        * surv_t25 * surv_t30
+survival_rate_t35 = 100 * surv_t05 * surv_t10 * surv_t15 * surv_t20 \
+                        * surv_t25 * surv_t30 * surv_t35
+survival_rate_t40 = 100 * surv_t05 * surv_t10 * surv_t15 * surv_t20 \
+                        * surv_t25 * surv_t30 * surv_t35 * surv_t40
+survival_rate_t45 = 100 * surv_t05 * surv_t10 * surv_t15 * surv_t20 \
+                        * surv_t25 * surv_t30 * surv_t35 * surv_t40 \
+                        * surv_t45
+```
+
+The SR data was then placed in another dataframe, `survival_rates`.
+
+```python
+survival_rates = pd.DataFrame(dict(survival_rate_t05 = survival_rate_t05,
+                                   survival_rate_t10 = survival_rate_t10,
+                                   survival_rate_t15 = survival_rate_t15,
+                                   survival_rate_t20 = survival_rate_t20,
+                                   survival_rate_t25 = survival_rate_t25,
+                                   survival_rate_t30 = survival_rate_t30,
+                                   survival_rate_t35 = survival_rate_t35,
+                                   survival_rate_t40 = survival_rate_t40,
+                                   survival_rate_t45 = survival_rate_t45))
+survival_rates = survival_rates.rename(columns = {"survival_rate_t05": "t05",
+                                                  "survival_rate_t10": "t10",
+                                                  "survival_rate_t15": "t15",
+                                                  "survival_rate_t20": "t20",
+                                                  "survival_rate_t25": "t25",
+                                                  "survival_rate_t30": "t30",
+                                                  "survival_rate_t35": "t35",
+                                                  "survival_rate_t40": "t40",
+                                                  "survival_rate_t45": "t45"})
+sr1 = survival_rates.transpose() # use the drug names as the keys in the dataframe
+```
+
+The results were also plotted into a line graph.
+
+```python
+# Plot survival rates
+
+plt.plot(np.delete(time, 0), 
+        sr1, 
+        marker = "o")
+plt.title("Survival Rates for Each Anti-Cancer Drug")
+plt.xlabel("Day Number")
+plt.ylabel("Survival Rate (%)")
+plt.xlim(0, max(time) + 5)
+plt.ylim(0, 120)
+plt.legend(sr1.keys())
+```
+
 ## Resources
+Nohrmann, B. A. 1953. [Survival rate calculation](https://www.tandfonline.com/doi/pdf/10.3109/00016925309136688). Acta Radiologica. 39(1): 78–82.
