@@ -104,8 +104,84 @@ no_series = np.arange(0,no_drugs)
 ```
 
 ### Tumour Size Changes
+To determine changes in tumour volume, the tumour sizes at the beginning of the study (t = 0) and at the end of the study (t = 45) were extracted from `tumour_means`. Calculating the percentage change followed.
+
+```python
+# % tumour size change between time 0 and time 45
+pct_tumour_change = round((((j - a) / j) * 100),2)
+pct_tumour_change
+```
+
+These values were plotted on a bar graph in which tumour volume increases were positive (and green) and the decreases were negative (and red).
+
+```python
+# graph the tumour changes
+plt.bar(no_series,
+        pct_tumour_change,
+        color = ["green" if pct_tumour_change[i] > 0 else "red" for i in no_series])
+plt.xticks(no_series, xlabels)
+plt.title("Tumour Volumes Across Drug Therapies")
+plt.xlabel("Drug")
+plt.ylabel("Change in tumour volume (%)")
+plt.axhline(y = 0, color = "black")
+```
+
+The bar graph was further annotated with the percentage values (white font)
+
+```python
+# Add label inside the bar graph (%)
+count = 0
+
+for i in pct_tumour_change:
+    if i < 0:
+        y_coord = -3.5
+    else:
+        y_coord = 2
+    plt.text(count, y_coord, str(round(i, 1)) + '%', ha = 'center', color = 'white')
+    count += 1
+```
 
 ### Tumour Response Over Time
+
+A line chart was generated to show the tumour volumes against time. SEMs were also included for each data point.
+
+```python
+# Plot means and SE
+
+for i in no_series:
+    std_error = tumour_sem[drugs[i]]
+    plt.errorbar(x_axis, 
+                 tumour_means[drugs[i]], 
+                 yerr = std_error, 
+                 marker = "o", capsize = 3)
+    plt.title("Comparison of Tumour Reponse to Each Drug Therapy During the Treatment")
+    plt.xlabel("Day Number")
+    plt.ylabel("Tumour Volume (mm3)")
+    plt.xlim(-5, max(time) + 5)
+    plt.ylim(30, 75)
+    plt.legend()
+```
+
+It was also interesting to plot the rate of change in tumour volume. Hence, the percent changes were calculated
+
+```python
+# Data transformation to get %tumour size change
+pct_tumour_change = (tumour_means.diff() / tumour_means) * 100
+```
+
+and then plotted.
+
+```python
+# Prepare plot of tumour change vs time
+plt.plot(x_axis,
+         pct_tumour_change,
+         marker = "o")
+
+plt.xlabel("Time (days)")
+plt.ylabel("Change in tumour volume (%)")
+plt.legend(tumour_means.keys())
+```
+
 ### Metastatic Response to Treatment
 ### Survival Rates
 ## Resources
